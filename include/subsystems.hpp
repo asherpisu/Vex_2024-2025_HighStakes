@@ -9,6 +9,6 @@ extern Drive chassis;
 
  inline pros::Motor intake(-17);
  inline pros::Motor lb(-10);
- inline pros::adi::DigitalOut mogoClamp('H', false);
+ inline pros::adi::DigitalOut mogoClamp('H', true);
  inline pros::adi::DigitalOut doinker('A');
  inline pros::Rotation lbRotation(-1);
