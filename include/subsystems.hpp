@@ -12,3 +12,4 @@ extern Drive chassis;
  inline pros::adi::DigitalOut mogoClamp('H', true);
  inline pros::adi::DigitalOut doinker('A');
  inline pros::Rotation lbRotation(-1);
+ inline pros::Optical colorSensor(3);
