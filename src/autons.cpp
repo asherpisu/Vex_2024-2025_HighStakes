@@ -30,7 +30,7 @@ void default_constants() {
   chassis.pid_odom_drive_exit_condition_set(90_ms, 1_in, 250_ms, 3_in, 500_ms, 750_ms);
   chassis.pid_turn_chain_constant_set(3_deg);
   chassis.pid_swing_chain_constant_set(5_deg);
-  chassis.pid_drive_chain_constant_set(3_in);
+  chassis.pid_drive_chain_constant_set(4_in);
 
   // Slew constants
   chassis.slew_turn_constants_set(3_deg, 70);
