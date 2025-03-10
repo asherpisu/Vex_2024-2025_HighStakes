@@ -6,8 +6,8 @@
 /////
 
 // These are out of 127
-const int DRIVE_SPEED = 110;
-const int TURN_SPEED = 90;
+const int DRIVE_SPEED = 127;
+const int TURN_SPEED = 127;
 const int SWING_SPEED = 110;
 
 ///
@@ -15,9 +15,9 @@ const int SWING_SPEED = 110;
 ///
 void default_constants() {
   // P, I, D, and Start I
-  chassis.pid_drive_constants_set(20.0, 0.0, 100.0);         // Fwd/rev constants, used for odom and non odom motions
+  chassis.pid_drive_constants_set(10.45, 0.0, 13);         // Fwd/rev constants, used for odom and non odom motions
   chassis.pid_heading_constants_set(11.0, 0.0, 20.0);        // Holds the robot straight while going forward without odom
-  chassis.pid_turn_constants_set(3.0, 0.05, 20.0, 15.0);     // Turn in place constants
+  chassis.pid_turn_constants_set(5.7, 0.0, 28, 15);     // Turn in place constants
   chassis.pid_swing_constants_set(6.0, 0.0, 65.0);           // Swing constants
   chassis.pid_odom_angular_constants_set(6.5, 0.0, 52.5);    // Angular control for odom motions
   chassis.pid_odom_boomerang_constants_set(5.8, 0.0, 32.5);  // Angular control for boomerang motions
@@ -48,6 +48,124 @@ void default_constants() {
   chassis.pid_angle_behavior_set(ez::shortest);  // Changes the default behavior for turning, this defaults it to the shortest path there
 }
 
+//
+///Motor Functions
+//
+int target = 0;
+int load = 19;
+double kP = 3.75;
+
+void scoreLb(){  
+  intake.move_relative(-175, 100);      
+  target = 145;
+             
+}
+
+void liftLb(){
+  intake.move_relative(-175, 100);  
+  target = 45;     
+}
+
+void loadLb(){
+  //kp = 3.8;
+  if (target != load){
+      target = load;
+  }    
+  else{
+      target = 0;
+  }
+  //intake.move_velocity(600);   
+}
+void lbRest(){
+  target = 0;
+}
+
+void movelbToAngle(int angle){
+  target = angle;
+}
+
+void flip(){
+  if (target != 200){
+      target = 200;
+  }
+  else{
+      target = load;
+  }
+}
+void liftControl(){                
+  lb.move(kP*(target-(lbRotation.get_position()/100.0)));    
+}
+
+void backwardsIntake(){
+  intake.move_relative(-150, 100);  
+}
+
+void closeClamp(){
+  mogoClamp.set_value(false);
+}
+
+void openClamp(){
+  mogoClamp.set_value(true);
+  intake.move_relative(-150, 100);  
+}
+
+void doinkerDown(){
+  doinker.set_value(true);
+}
+
+void doinkerUp(){
+  doinker.set_value(false);
+}
+
+void skills(){
+  //lb starts at load, subtract all angles by 19
+  chassis.odom_xyt_set(72, 0, 180);
+  chassis.pid_wait();
+  chassis.pid_odom_set({{72_in, 6.5_in}, rev, 60}); //align to alliance stake
+  chassis.pid_wait_until(5_in);
+  flip(); //score on alliance stake
+  pros::delay(900);
+  lbRest();
+  pros::delay(100);
+  chassis.pid_drive_set(-6_in, 70, false);  //drive back
+  chassis.pid_wait();
+  chassis.pid_turn_set(-90, 100); //turn to goal
+  chassis.pid_wait();  
+  chassis.pid_drive_set(-16_in, 70, false);
+  chassis.pid_wait_until(-14);
+  chassis.pid_speed_max_set(20); 
+  chassis.pid_wait();
+  closeClamp(); //clamp onto goal
+  chassis.pid_turn_set(22, 110); //turn to rings  
+  chassis.pid_wait();
+  intake.move_velocity(600); //turn intake on 
+  chassis.pid_drive_set(65_in, DRIVE_SPEED, true);  
+  chassis.pid_wait_quick();
+  loadLb(); //move lb up  
+  chassis.pid_drive_set(13_in, 30, false); //go slower
+  chassis.pid_wait();      
+  chassis.pid_turn_set(5, TURN_SPEED); //turn to go back
+  chassis.pid_wait();      
+  chassis.pid_drive_set(-21.6, 70, false); //go back to wall stake
+  chassis.pid_wait();
+  chassis.pid_turn_set(90, TURN_SPEED); // turn to wall stake
+  chassis.pid_wait_quick();
+  intake.move_velocity(0); 
+  liftLb();
+  pros::delay(100);
+  intake.move_velocity(600);   
+  chassis.pid_drive_set(16.5_in, 70, false); //go forward
+  chassis.pid_wait();
+  scoreLb();
+  pros::delay(700);
+  lbRest();
+  chassis.pid_drive_set(-12_in, 70, false);
+  chassis.pid_wait();
+  chassis.pid_turn_set(180, TURN_SPEED);
+  chassis.pid_wait();
+  chassis.pid_drive_set(52_in, DRIVE_SPEED, true);
+  chassis.pid_wait();
+}
 ///
 // Drive Example
 ///
@@ -56,15 +174,22 @@ void drive_example() {
   // The second parameter is max speed the robot will drive at
   // The third parameter is a boolean (true or false) for enabling/disabling a slew at the start of drive motions
   // for slew, only enable it when the drive distance is greater than the slew distance + a few inches
-
-  chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
+  chassis.odom_xyt_set(0_in, 0_in, 0_deg);
+  chassis.pid_odom_set({{0_in,68_in}, fwd, 110}); 
+  chassis.pid_wait();
+  loadLb();
+  chassis.pid_wait(); 
+  chassis.pid_drive_set(-8_in, DRIVE_SPEED, false);
+  chassis.pid_wait();
+  chassis.pid_odom_set({{0_in,0_in}, rev, 110});
+  
+  /*
+  chassis.pid_drive_set(-24_in, DRIVE_SPEED);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(-12_in, DRIVE_SPEED);
+  chassis.pid_drive_set(-24_in, DRIVE_SPEED);
   chassis.pid_wait();
-
-  chassis.pid_drive_set(-12_in, DRIVE_SPEED);
-  chassis.pid_wait();
+  */
 }
 
 ///
@@ -74,21 +199,26 @@ void turn_example() {
   // The first parameter is the target in degrees
   // The second parameter is max speed the robot will drive at
 
-  chassis.pid_turn_set(90_deg, TURN_SPEED);
-  chassis.pid_wait();
-
   chassis.pid_turn_set(45_deg, TURN_SPEED);
   chassis.pid_wait();
-
+  chassis.pid_turn_set(135_deg, TURN_SPEED);
+  chassis.pid_wait();
   chassis.pid_turn_set(0_deg, TURN_SPEED);
   chassis.pid_wait();
+  
+
+  // chassis.pid_turn_set(45_deg, TURN_SPEED);
+  // chassis.pid_wait();
+
+  // chassis.pid_turn_set(0_deg, TURN_SPEED);
+  // chassis.pid_wait();
 }
 
 ///
 // Combining Turn + Drive
 ///
 void drive_and_turn() {
-  chassis.pid_drive_set(24_in, DRIVE_SPEED, true);
+  chassis.pid_odom_set({{0_in, 36_in}, fwd, 110});  
   chassis.pid_wait();
 
   chassis.pid_turn_set(45_deg, TURN_SPEED);
@@ -100,7 +230,7 @@ void drive_and_turn() {
   chassis.pid_turn_set(0_deg, TURN_SPEED);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(-24_in, DRIVE_SPEED, true);
+  chassis.pid_odom_set({{0_in, 0_in}, rev, 110});
   chassis.pid_wait();
 }
 

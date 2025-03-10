@@ -1,5 +1,6 @@
 #include "main.h"
 
+
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
@@ -8,12 +9,12 @@
 // Chassis constructor
 ez::Drive chassis(
     // These are your drive motors, the first motor is used for sensing!
-    {1, 2, 3},     // Left Chassis Ports (negative port will reverse it!)
-    {-4, -5, -6},  // Right Chassis Ports (negative port will reverse it!)
+    {-20, -13, -19},     // Left Chassis Ports (negative port will reverse it!)
+    {18, 14, 9},  // Right Chassis Ports (negative port will reverse it!)
 
-    7,      // IMU Port
-    4.125,  // Wheel Diameter (Remember, 4" wheels without screw holes are actually 4.125!)
-    343);   // Wheel RPM = cartridge * (motor gear / wheel gear)
+    3,      // IMU Port
+    3.25,  // Wheel Diameter (Remember, 4" wheels without screw holes are actually 4.125!)
+    450);   // Wheel RPM = cartridge * (motor gear / wheel gear)
 
 // Uncomment the trackers you're using here!
 // - `8` and `9` are smart ports (making these negative will reverse the sensor)
@@ -21,7 +22,7 @@ ez::Drive chassis(
 // - `2.75` is the wheel diameter
 // - `4.0` is the distance from the center of the wheel to the center of the robot
 // ez::tracking_wheel horiz_tracker(8, 2.75, 4.0);  // This tracking wheel is perpendicular to the drive wheels
-// ez::tracking_wheel vert_tracker(9, 2.75, 4.0);   // This tracking wheel is parallel to the drive wheels
+ ez::tracking_wheel vert_tracker(-2, 2.04, -0.375);   // This tracking wheel is parallel to the drive wheels
 
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -42,7 +43,7 @@ void initialize() {
   // Look at your vertical tracking wheel and decide if it's to the left or right of the center of the robot
   //  - change `left` to `right` if the tracking wheel is to the right of the centerline
   //  - ignore this if you aren't using a vertical tracker
-  // chassis.odom_tracker_left_set(&vert_tracker);
+   chassis.odom_tracker_left_set(&vert_tracker);
 
   // Configure your chassis controls
   chassis.opcontrol_curve_buttons_toggle(true);   // Enables modifying the controller curve with buttons on the joysticks
@@ -58,7 +59,7 @@ void initialize() {
 
   // Autonomous Selector using LLEMU
   ez::as::auton_selector.autons_add({
-      {"Drive\n\nDrive forward and come back", drive_example},
+      {"Auton Skills", skills},
       {"Turn\n\nTurn 3 times.", turn_example},
       {"Drive and Turn\n\nDrive forward, turn, come back", drive_and_turn},
       {"Drive and Turn\n\nSlow down during drive", wait_until_change_speed},
@@ -73,7 +74,12 @@ void initialize() {
       {"Boomerang Pure Pursuit\n\nGo to (0, 24, 45) on the way to (24, 24) then come back to (0, 0, 0)", odom_boomerang_injected_pure_pursuit_example},
       {"Measure Offsets\n\nThis will turn the robot a bunch of times and calculate your offsets for your tracking wheels.", measure_offsets},
   });
-
+  pros::Task backGroundTasks([]{
+    while (true){
+        liftControl();                               
+        pros::delay(10);                    
+    }
+}); 
   // Initialize chassis and auton selector
   chassis.initialize();
   ez::as::initialize();
@@ -205,8 +211,8 @@ void ez_template_extras() {
     //  When enabled:
     //  * use A and Y to increment / decrement the constants
     //  * use the arrow keys to navigate the constants
-    if (master.get_digital_new_press(DIGITAL_X))
-      chassis.pid_tuner_toggle();
+    //if (master.get_digital_new_press(DIGITAL_X))
+      //chassis.pid_tuner_toggle();
 
     // Trigger the selected autonomous routine
     if (master.get_digital(DIGITAL_B) && master.get_digital(DIGITAL_DOWN)) {
@@ -256,7 +262,43 @@ void opcontrol() {
     // . . .
     // Put more user control code here!
     // . . .
-
+    if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L1)){
+      closeClamp();
+  }
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_L2)){
+      openClamp();
+  }
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_RIGHT)){
+      doinkerDown();
+  }
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_LEFT)){
+      doinkerUp();
+      chassis.drive_sensor_reset();
+  }             
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_A)){
+      backwardsIntake();
+  }
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)){
+      liftLb();
+  }
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)){
+      flip();
+  }
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R2)){
+      loadLb();            
+  }
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_R1)){
+      scoreLb();            
+  } 
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)){
+      intake.move_velocity(600);
+      //pros::delay(1000);
+      // Check if motor reaches minimum velocity to start tracking
+                                       
+  }
+  if (master.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)){
+      intake.move_velocity(0);         
+  }
     pros::delay(ez::util::DELAY_TIME);  // This is used for timer calculations!  Keep this ez::util::DELAY_TIME
   }
 }
